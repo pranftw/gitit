@@ -6,7 +6,7 @@ class GitIt:
     import requests
     import json
     def __init__(self):
-        self.owner = "pranavsastry"
+        self.owner = GitIt.os.getenv('GITHUB_USERNAME')
         self.token = GitIt.os.getenv('GITHUB_TOKEN')
         self.headers = {"Authorization": "token {}".format(self.token),"Accept":"application/vnd.github.v3+json"}
     def search_file(self,base_url,fname):
