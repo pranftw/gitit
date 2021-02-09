@@ -1,3 +1,8 @@
+# Author: Pranav Sastry Copyright 2021
+# Created: 8th Feb 2021
+# Disclaimer: File contents shouldn't be copied into another repository without prior permission by emailing to pranava.sri@gmail.com,
+#             however to fork the repository, you needn't take any
+
 class GitIt:
     '''
         Methods:
