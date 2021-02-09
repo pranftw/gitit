@@ -10,8 +10,6 @@ class GitIt:
             delete_dir - Delete a directory and its contents recursively
             update_file - Upload a local file on your computer to GitHub
             update_dir - Update a local directory on your computer to GitHub
-
-
     '''
     # Imports TODO: Modify the path in sys.path.append based on your system's python package location
     import sys
