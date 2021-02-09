@@ -88,21 +88,59 @@ class GitIt:
                 self.delete_file(repo,fname=content["name"],filepath_gh=content["path"])
             else:
                 self.delete_dir(repo,content["name"],dir_path=content["path"])
-    def update_file(self,repo,message,filepath_local,filepath_gh=None):
+    def update_file(self,repo,filepath_local,message="",filepath_gh=None):
         file_b64 = GitIt.b64.b64encode(open(filepath_local,"rb").read()).decode("ascii")
+        fname = filepath_local.split("/")[-1]
         if(filepath_gh is not None):
             url = "https://api.github.com/repos/{}/{}/contents/{}".format(self.owner,repo,filepath_gh)
-            print("File not present! Creating file...")
-            params = {"message":message,"content":file_b64,"path":filepath_gh}
+            sha = None
+            url_contents = GitIt.requests.get(url,headers=self.headers).json()
+            try:
+                sha = url_contents["sha"]
+                path = url_contents["path"]
+            except:
+                pass
+            if(sha is None):
+                print("File not present! Creating file...")
+                if(message==""):
+                    message = "Added {}".format(fname)
+                params = {"message":message,"content":file_b64,"path":filepath_gh}
+            else:
+                print("File already present! Updating file...")
+                if(message==""):
+                    message = "Added {}".format(fname)
+                params = {"message":message,"content":file_b64,"path":path,"sha":sha}
         else:
-            print("File already present! Updating file...")
-            fname = filepath_local.split("/")[-1]
             _,path,sha = self.search_file("https://api.github.com/repos/{}/{}/contents".format(self.owner,repo),fname=fname)
-            url = "https://api.github.com/repos/{}/{}/contents/{}".format(self.owner,repo,path)
-            params = {"message":message,"content":file_b64,"path":path,"sha":sha}
+            if(sha is None):
+                url = "https://api.github.com/repos/{}/{}/contents/{}".format(self.owner,repo,fname)
+                print("File not present! Creating file...")
+                if(message==""):
+                    message = "Added {}".format(fname)
+                params = {"message":message,"content":file_b64,"path":fname}
+            else:
+                url = "https://api.github.com/repos/{}/{}/contents/{}".format(self.owner,repo,path)
+                print("File already present! Updating file...")
+                if(message==""):
+                    message = "Updated {}".format(fname)
+                params = {"message":message,"content":file_b64,"path":path,"sha":sha}
         r = GitIt.requests.put(url,headers=self.headers,data=GitIt.json.dumps(params))
         print(r.text)
-
+    def update_dir(self,repo,base_url,dirpath_local,dirpath_gh=None):
+        print("Updating directory...")
+        print(dirpath_local)
+        dir_contents = GitIt.os.listdir(dirpath_local)
+        dir_name = dirpath_local.split("/")[-1]
+        for content in dir_contents:
+            temp_path = "{}/{}".format(dirpath_local,content)
+            dir_tree = temp_path.replace("{}/".format(base_url),"")
+            if(dirpath_gh is not None):
+                dir_tree = "{}/".format(dirpath_gh) + dir_tree
+            # print(dir_tree)
+            if(GitIt.os.path.isdir(temp_path)):
+                self.update_dir(repo,base_url,temp_path,dirpath_gh)
+            else:
+                self.update_file(repo,temp_path,"",dir_tree)
 # gitit = GitIt()
 # flag,path,sha = gitit.search_file(base_url="https://api.github.com/repos/pranavsastry/neowise/contents",fname="profiles_settings.xml")
 # gitit.update_file("stargar","Hello World! This is test!","/Users/pranavsastry/Documents/CP/DivideIt.java","test/DivideIt.java")
@@ -114,3 +152,4 @@ class GitIt:
 # print(path)
 # gitit.update_file("stargar","Yahoo! New Commit","/Users/pranavsastry/Documents/CP/KDivisibleSum.java","test/hello/hello_again/KDivisibleSum.java")
 # gitit.delete_dir("stargar","test")
+# gitit.update_dir("testing","/Users/pranavsastry/Documents/javaFiles","/Users/pranavsastry/Documents/javaFiles")
