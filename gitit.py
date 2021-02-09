@@ -1,4 +1,19 @@
 class GitIt:
+    '''
+        Methods:
+            __init__ - Constructor for GitIt class
+            search_file - Search for a file recursively in GitHub Repository based on the content in the base_url
+            create_repo - Create a new Repository with minimal readme and mit license_template
+            delete_repo - Delete a Repository
+            delete_file - Delete a file
+            search_dir - Search for a directory recursively in GitHub Repository based on the content in the base_url
+            delete_dir - Delete a directory and its contents recursively
+            update_file - Upload a local file on your computer to GitHub
+            update_dir - Update a local directory on your computer to GitHub
+
+
+    '''
+    # Imports TODO: Modify the path in sys.path.append based on your system's python package location
     import sys
     sys.path.append("/opt/anaconda3/lib/python3.7/site-packages/")
     import base64 as b64
@@ -6,10 +21,30 @@ class GitIt:
     import requests
     import json
     def __init__(self):
+        '''
+            TODO: Set environment variables on your system that contains
+                  your GitHub Username and GitHub Token
+
+            Parameters:
+                None
+
+            Returns:
+                None
+        '''
         self.owner = GitIt.os.getenv('GITHUB_USERNAME')
         self.token = GitIt.os.getenv('GITHUB_TOKEN')
         self.headers = {"Authorization": "token {}".format(self.token),"Accept":"application/vnd.github.v3+json"}
     def search_file(self,base_url,fname):
+        '''
+            Parameters:
+                base_url (string): GitHub API URL in which to search for a file
+                fname (string): Name of the file to be searched
+
+            Returns:
+                flag (boolean): True if file is found, else False
+                path (string): path of file if found, else None
+                sha (string): sha of file if found, else None
+        '''
         repo_contents = GitIt.requests.get(base_url,headers=self.headers).json()
         flag = False
         path = None
@@ -30,21 +65,47 @@ class GitIt:
             except:
                 pass
         return flag,path,sha
-    def create_repo(self,name,is_private=None):
+    def create_repo(self,name,license="mit",is_private=None):
+        '''
+            Parameters:
+                name (string): Name of the new repo
+                license (string): License Template of the new repo. Default - mit
+                is_private (string): false if the new repo is Public, else the new repo is Private Default - None
+
+            Returns:
+                None
+        '''
         print("Creating Repo...")
         url = "https://api.github.com/user/repos" #POST
         if(is_private=="false"):
-            params = {"name":name,"auto_init":True,"license_template":"mit","private":False}
+            params = {"name":name,"auto_init":True,"license_template":license,"private":False}
         else:
-            params = {"name":name,"auto_init":True,"license_template":"mit","private":True}
+            params = {"name":name,"auto_init":True,"license_template":license,"private":True}
         r = GitIt.requests.post(url,headers=self.headers,data=GitIt.json.dumps(params))
         print(r.text)
     def delete_repo(self,repo):
+        '''
+            Parameters:
+                repo (string): Name of the repo to be deleted
+
+            Returns:
+                None
+        '''
         print("Deleting Repo...")
         url = "https://api.github.com/repos/{}/{}".format(self.owner,repo) #DELETE
         r = GitIt.requests.delete(url,headers=self.headers)
         print(r.text)
     def delete_file(self,repo,fname,filepath_gh=None):
+        '''
+            Parameters:
+                repo (string): Name of the Repository
+                fname (string): Name of the file to be deleted
+                filepath_gh (string): Path of the file on GitHub. Default - None
+
+            Returns:
+                None
+
+        '''
         print("Deleting file...")
         if(filepath_gh is None):
             _,path,sha = self.search_file("https://api.github.com/repos/{}/{}/contents".format(self.owner,repo),fname=fname)
@@ -57,6 +118,15 @@ class GitIt:
         r = GitIt.requests.delete(url,headers=self.headers,data=GitIt.json.dumps(params))
         print(r.text)
     def search_dir(self,base_url,dir_name):
+        '''
+            Parameters:
+                base_url (string): GitHub API URL in which to search for a directory
+                dir_name (string): Name of the Directory to be searched for
+
+            Returns:
+                flag (boolean): True if directory is found, else False
+                path (string): Path of the directory if found, else None
+        '''
         flag = False
         path = None
         repo_contents = GitIt.requests.get(base_url,headers=self.headers).json()
@@ -76,6 +146,15 @@ class GitIt:
                 pass
         return flag,path
     def delete_dir(self,repo,dir_name,dir_path=None):
+        '''
+            Parameters:
+                repo (string): Name of the Repository
+                dir_name (string): Name of the directory to be deleted
+                dir_path (string): Path of the directory to be deleted. Default - None
+
+            Returns:
+                None
+        '''
         print("Deleting directory...")
         if(dir_path is None):
             _,path = self.search_dir(base_url="https://api.github.com/repos/{}/{}/contents".format(self.owner,repo),dir_name=dir_name)
@@ -89,6 +168,18 @@ class GitIt:
             else:
                 self.delete_dir(repo,content["name"],dir_path=content["path"])
     def update_file(self,repo,filepath_local,message="",filepath_gh=None):
+        '''
+            Parameters:
+                repo (string): Name of the Repository
+                filepath_local (string): Path of the file on your local computer
+                message (string): Commit message. Default - "", if Default, then when file is created,
+                                  "Added filename.py" will be default and if updated "Updated filename.py"
+                                  will be the default commit messages
+                filepath_gh (string): Path of the file on GitHub, default - None
+
+            Returns:
+                None
+        '''
         file_b64 = GitIt.b64.b64encode(open(filepath_local,"rb").read()).decode("ascii")
         fname = filepath_local.split("/")[-1]
         if(filepath_gh is not None):
@@ -126,19 +217,29 @@ class GitIt:
                 params = {"message":message,"content":file_b64,"path":path,"sha":sha}
         r = GitIt.requests.put(url,headers=self.headers,data=GitIt.json.dumps(params))
         print(r.text)
-    def update_dir(self,repo,base_url,dirpath_local,dirpath_gh=None):
+    def update_dir(self,repo,base_path,dirpath_local,dirpath_gh=None):
+        '''
+            Parameters:
+                repo (string): Name of the Repository
+                base_path (string): Path of the directory on your computer
+                dirpath_local (string): Path of the directory on your computer
+                dirpath_gh (string): Path of the direcory on GitHub to be updated
+
+            Returns:
+                None
+        '''
         print("Updating directory...")
         print(dirpath_local)
         dir_contents = GitIt.os.listdir(dirpath_local)
         dir_name = dirpath_local.split("/")[-1]
         for content in dir_contents:
             temp_path = "{}/{}".format(dirpath_local,content)
-            dir_tree = temp_path.replace("{}/".format(base_url),"")
+            dir_tree = temp_path.replace("{}/".format(base_path),"")
             if(dirpath_gh is not None):
                 dir_tree = "{}/".format(dirpath_gh) + dir_tree
             # print(dir_tree)
             if(GitIt.os.path.isdir(temp_path)):
-                self.update_dir(repo,base_url,temp_path,dirpath_gh)
+                self.update_dir(repo,base_path,temp_path,dirpath_gh)
             else:
                 self.update_file(repo,temp_path,"",dir_tree)
 # gitit = GitIt()
