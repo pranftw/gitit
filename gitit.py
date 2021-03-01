@@ -99,10 +99,9 @@ class GitIt:
                 None
         '''
         print("Deleting Repo...")
-        url = "https://api.github.com/repos/{}/{}".format(self.owner,repo) 
+        url = "https://api.github.com/repos/{}/{}".format(self.owner,repo)
         r = GitIt.requests.delete(url,headers=self.headers)
         print(r.text)
-
 
     def delete_file(self,repo,fname,filepath_gh=None):
         '''
@@ -164,18 +163,21 @@ class GitIt:
             Returns:
                 None
         '''
-        print("Deleting directory...")
-        if(dir_path is None):
-            _,path = self.search_dir(base_url="https://api.github.com/repos/{}/{}/contents".format(self.owner,repo),dir_name=dir_name)
-            url = "https://api.github.com/repos/{}/{}/contents/{}".format(self.owner,repo,path)
-        else:
-            url = "https://api.github.com/repos/{}/{}/contents/{}".format(self.owner,repo,dir_path)
-        repo_contents = GitIt.requests.get(url,headers=self.headers).json()
-        for content in repo_contents:
-            if(content["type"]=="file"):
-                self.delete_file(repo,fname=content["name"],filepath_gh=content["path"])
+        try:
+            print("Deleting directory...")
+            if(dir_path is None):
+                _,path = self.search_dir(base_url="https://api.github.com/repos/{}/{}/contents".format(self.owner,repo),dir_name=dir_name)
+                url = "https://api.github.com/repos/{}/{}/contents/{}".format(self.owner,repo,path)
             else:
-                self.delete_dir(repo,content["name"],dir_path=content["path"])
+                url = "https://api.github.com/repos/{}/{}/contents/{}".format(self.owner,repo,dir_path)
+            repo_contents = GitIt.requests.get(url,headers=self.headers).json()
+            for content in repo_contents:
+                if(content["type"]=="file"):
+                    self.delete_file(repo,fname=content["name"],filepath_gh=content["path"])
+                else:
+                    self.delete_dir(repo,content["name"],dir_path=content["path"])
+        except:
+            print("Directory unavailable!")
 
 
     def update_file(self,repo,filepath_local,message="",filepath_gh=None):
@@ -209,7 +211,7 @@ class GitIt:
             else:
                 print("File already present! Updating file...")
                 if(message==""):
-                    message = "Added {}".format(fname)
+                    message = "Updated {}".format(fname)
                 params = {"message":message,"content":file_b64,"path":path,"sha":sha}
         else:
             _,path,sha = self.search_file("https://api.github.com/repos/{}/{}/contents".format(self.owner,repo),fname=fname)
